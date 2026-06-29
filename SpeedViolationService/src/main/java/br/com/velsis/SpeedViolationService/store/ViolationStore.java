@@ -15,7 +15,12 @@ public class ViolationStore {
 
     public void save(ViolationResponse response) {
         violations.compute(response.licensePlate(), (key, list) -> {
-            var newList = list == null ? new ArrayList<ViolationResponse>() : new ArrayList<>(list);
+            List<ViolationResponse> newList;
+            if (list == null) {
+                newList = new ArrayList<>();
+            } else {
+                newList = new ArrayList<>(list);
+            }
             newList.add(response);
             return Collections.unmodifiableList(newList);
         });

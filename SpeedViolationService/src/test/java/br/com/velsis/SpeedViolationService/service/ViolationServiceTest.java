@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -31,9 +33,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should return hasViolation false when speed is below limit")
         void speedBelowLimit() {
-            var request = new CaptureRequestDTO("ABC1D23", 50, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 50, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isFalse();
             assertThat(response.excessPercentage()).isZero();
@@ -44,9 +46,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should return hasViolation false when speed equals limit minus tolerance")
         void speedEqualToLimitMinusTolerance() {
-            var request = new CaptureRequestDTO("ABC1D23", 67, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 67, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isFalse();
             assertThat(response.consideredSpeed()).isEqualTo(60.0);
@@ -55,9 +57,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should return hasViolation false when considered speed equals speed limit")
         void speedEqualToLimitAfterTolerance() {
-            var request = new CaptureRequestDTO("ABC1D23", 67, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 67, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isFalse();
         }
@@ -65,9 +67,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should handle zero measured speed")
         void zeroSpeed() {
-            var request = new CaptureRequestDTO("ABC1D23", 0, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 0, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isFalse();
             assertThat(response.measuredSpeed()).isZero();
@@ -82,9 +84,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should classify MEDIUM when excess is up to 20%")
         void mediumViolation() {
-            var request = new CaptureRequestDTO("ABC1D23", 78, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 78, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isTrue();
             assertThat(response.consideredSpeed()).isEqualTo(71.0);
@@ -96,9 +98,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should classify SERIOUS when excess is between 20%% and 50%%")
         void seriousViolation() {
-            var request = new CaptureRequestDTO("ABC1D23", 92, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 92, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isTrue();
             assertThat(response.consideredSpeed()).isEqualTo(85.0);
@@ -110,9 +112,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should classify GRAVE when excess exceeds 50%")
         void verySeriousViolation() {
-            var request = new CaptureRequestDTO("ABC1D23", 120, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 120, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isTrue();
             assertThat(response.consideredSpeed()).isEqualTo(113.0);
@@ -124,9 +126,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should classify MEDIUM at exactly 20% excess (CTB Art. 218 I)")
         void excessExactly20Percent() {
-            var request = new CaptureRequestDTO("ABC1D23", 79, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 79, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isTrue();
             assertThat(response.excessPercentage()).isEqualTo(20.0);
@@ -137,9 +139,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should classify SERIOUS at exactly 50% excess (CTB Art. 218 II)")
         void excessExactly50Percent() {
-            var request = new CaptureRequestDTO("ABC1D23", 97, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 97, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isTrue();
             assertThat(response.excessPercentage()).isEqualTo(50.0);
@@ -155,9 +157,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should include license plate and equipment id from request")
         void preservesRequestFields() {
-            var request = new CaptureRequestDTO("XYZ9A88", 100, 80, "RAD-SP-042", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("XYZ9A88", 100, 80, "RAD-SP-042", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.licensePlate()).isEqualTo("XYZ9A88");
             assertThat(response.equipmentId()).isEqualTo("RAD-SP-042");
@@ -168,9 +170,9 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should set processedAt to current timestamp")
         void processedAtIsPresent() {
-            var request = new CaptureRequestDTO("ABC1D23", 92, 60, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 92, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.processedAt()).isNotNull();
         }
@@ -190,9 +192,9 @@ class ViolationServiceTest {
         })
         @DisplayName("should correctly determine violation at speed boundaries")
         void violationBoundaries(double measured, double limit, double expectedConsidered, boolean expectedViolation) {
-            var request = new CaptureRequestDTO("ABC1D23", measured, limit, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", measured, limit, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.consideredSpeed()).isEqualTo(expectedConsidered);
             assertThat(response.hasViolation()).isEqualTo(expectedViolation);
@@ -212,9 +214,9 @@ class ViolationServiceTest {
         })
         @DisplayName("should apply 7 km/h tolerance at or below 100 km/h and 7% above")
         void speed100Threshold(double measured, double limit, double expectedConsidered, boolean expectedViolation) {
-            var request = new CaptureRequestDTO("ABC1D23", measured, limit, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", measured, limit, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.consideredSpeed()).isEqualTo(expectedConsidered);
             assertThat(response.hasViolation()).isEqualTo(expectedViolation);
@@ -228,7 +230,7 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should return empty list when no violations exist")
         void noViolations() {
-            var result = service.findByLicensePlate("ABC1D23");
+            List<ViolationResponse> result = service.findByLicensePlate("ABC1D23");
 
             assertThat(result).isEmpty();
         }
@@ -247,9 +249,9 @@ class ViolationServiceTest {
         @DisplayName("should classify severity correctly across all CTB levels")
         void allSeverities(double measured, double limit, double expectedConsidered,
                            double expectedExcess, String expectedSeverity, String expectedCtb) {
-            var request = new CaptureRequestDTO("ABC1D23", measured, limit, "RAD-001", "2026-06-08T14:30:00Z");
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", measured, limit, "RAD-001", "2026-06-08T14:30:00Z");
 
-            var response = service.evaluate(request);
+            ViolationResponse response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isTrue();
             assertThat(response.consideredSpeed()).isEqualTo(expectedConsidered);

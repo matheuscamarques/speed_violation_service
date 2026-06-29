@@ -26,33 +26,52 @@ public class ViolationService {
     }
 
     public ViolationResponse evaluate(CaptureRequestDTO request) {
-        var consideredSpeed = Math.max(0, request.measuredSpeed() - TOLERANCE);
-        var speedLimit = request.speedLimit();
-        var hasViolation = consideredSpeed > speedLimit;
-        var excess = hasViolation ? excessPercentage(consideredSpeed, speedLimit) : 0;
-        var details = hasViolation ? classifyViolation(excess) : null;
+        double consideredSpeed = Math.max(0, request.measuredSpeed() - TOLERANCE);
+        double speedLimit = request.speedLimit();
+        boolean hasViolation = consideredSpeed > speedLimit;
 
-        var response = new ViolationResponse(
+        if (!hasViolation) {
+            return noViolationResponse(request, consideredSpeed, speedLimit);
+        }
+
+        double excess = excessPercentage(consideredSpeed, speedLimit);
+        ViolationDetails details = classifyViolation(excess);
+        ViolationResponse response = violationResponse(request, consideredSpeed, speedLimit, excess, details);
+        violationStore.save(response);
+        return response;
+    }
+
+    public List<ViolationResponse> findByLicensePlate(String licensePlate) {
+        return violationStore.findByLicensePlate(licensePlate);
+    }
+
+    private static ViolationResponse noViolationResponse(CaptureRequestDTO request, double consideredSpeed, double speedLimit) {
+        return new ViolationResponse(
+                request.licensePlate(),
+                request.equipmentId(),
+                request.measuredSpeed(),
+                consideredSpeed,
+                speedLimit,
+                0,
+                false,
+                null,
+                OffsetDateTime.now()
+        );
+    }
+
+    private static ViolationResponse violationResponse(CaptureRequestDTO request, double consideredSpeed,
+                                                        double speedLimit, double excess, ViolationDetails details) {
+        return new ViolationResponse(
                 request.licensePlate(),
                 request.equipmentId(),
                 request.measuredSpeed(),
                 consideredSpeed,
                 speedLimit,
                 excess,
-                hasViolation,
+                true,
                 details,
                 OffsetDateTime.now()
         );
-
-        if (hasViolation) {
-            violationStore.save(response);
-        }
-
-        return response;
-    }
-
-    public List<ViolationResponse> findByLicensePlate(String licensePlate) {
-        return violationStore.findByLicensePlate(licensePlate);
     }
 
     private static double excessPercentage(double speed, double limit) {
@@ -62,9 +81,12 @@ public class ViolationService {
     }
 
     private static ViolationDetails classifyViolation(double excess) {
-        var severity = excess <= EXCESS_LIMIT_MEDIUM ? ViolationSeverity.MEDIUM
-                     : excess <= EXCESS_LIMIT_SERIOUS ? ViolationSeverity.SERIOUS
-                     : ViolationSeverity.GRAVE;
-        return new ViolationDetails(severity.name(), severity.ctbCode());
+        if (excess <= EXCESS_LIMIT_MEDIUM) {
+            return new ViolationDetails(ViolationSeverity.MEDIUM.name(), ViolationSeverity.MEDIUM.ctbCode());
+        }
+        if (excess <= EXCESS_LIMIT_SERIOUS) {
+            return new ViolationDetails(ViolationSeverity.SERIOUS.name(), ViolationSeverity.SERIOUS.ctbCode());
+        }
+        return new ViolationDetails(ViolationSeverity.GRAVE.name(), ViolationSeverity.GRAVE.ctbCode());
     }
 }

@@ -42,7 +42,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 200 with valid FIXED origin")
     void validRequestFixed() throws Exception {
-        var response = new ViolationResponse("ABC1D23", "RAD-CWB-001", 92, 85, 60, 41.67, true,
+        ViolationResponse response = new ViolationResponse("ABC1D23", "RAD-CWB-001", 92, 85, 60, 41.67, true,
                 new ViolationResponse.ViolationDetails("SERIOUS", "218-II"), OffsetDateTime.now());
         when(violationService.evaluate(any())).thenReturn(response);
 
@@ -56,7 +56,7 @@ class ViolationEvaluateControllerTest {
     @ValueSource(strings = {"MOBILE", "HANDHELD"})
     @DisplayName("should return 200 with valid origins")
     void validRequestOtherOrigins(String origin) throws Exception {
-        var response = new ViolationResponse("ABC1D23", "RAD-CWB-001", 92, 85, 60, 41.67, true,
+        ViolationResponse response = new ViolationResponse("ABC1D23", "RAD-CWB-001", 92, 85, 60, 41.67, true,
                 new ViolationResponse.ViolationDetails("SERIOUS", "218-II"), OffsetDateTime.now());
         when(violationService.evaluate(any())).thenReturn(response);
 
@@ -87,7 +87,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when license plate format is invalid")
     void invalidLicensePlate() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"INVALID","measuredSpeed":92,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -96,7 +96,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when measuredSpeed is negative")
     void negativeSpeed() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":-10,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -105,7 +105,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when measuredSpeed is zero")
     void zeroSpeed() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":0,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -114,7 +114,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when speedLimit is zero")
     void zeroSpeedLimit() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":0,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -123,7 +123,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when licensePlate is empty")
     void emptyLicensePlate() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -132,7 +132,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when equipmentId is empty")
     void emptyEquipmentId() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":60,"equipmentId":"","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -151,7 +151,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when licensePlate field is missing")
     void missingLicensePlate() throws Exception {
-        var body = """
+        String body = """
                 {"measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -160,7 +160,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when measuredSpeed field is missing")
     void missingMeasuredSpeed() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -169,7 +169,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when speedLimit field is missing")
     void missingSpeedLimit() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -178,7 +178,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when equipmentId field is missing")
     void missingEquipmentId() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":60,"captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -187,7 +187,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when captureTimestamp field is missing")
     void missingCaptureTimestamp() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -196,7 +196,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when speedLimit is negative")
     void negativeSpeedLimit() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":-1,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -205,7 +205,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when captureTimestamp is not ISO-8601")
     void invalidCaptureTimestampFormat() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"08-06-2026"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -214,7 +214,7 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 400 when captureTimestamp is in the future")
     void futureCaptureTimestamp() throws Exception {
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2099-01-01T00:00:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isBadRequest());
@@ -229,10 +229,10 @@ class ViolationEvaluateControllerTest {
     @Test
     @DisplayName("should return 200 with valid old format license plate (ABC1234)")
     void validLicensePlateOldFormat() throws Exception {
-        var response = new ViolationResponse("ABC1234", "RAD-CWB-001", 50, 43, 60, 0, false, null, OffsetDateTime.now());
+        ViolationResponse response = new ViolationResponse("ABC1234", "RAD-CWB-001", 50, 43, 60, 0, false, null, OffsetDateTime.now());
         when(violationService.evaluate(any())).thenReturn(response);
 
-        var body = """
+        String body = """
                 {"licensePlate":"ABC1234","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isOk());
@@ -256,7 +256,7 @@ class ViolationEvaluateControllerTest {
         @Test
         @DisplayName("should return 200 with violations list")
         void withViolations() throws Exception {
-            var violation = new ViolationResponse("ABC1D23", "RAD-001", 100, 93, 80, 16.25, true,
+            ViolationResponse violation = new ViolationResponse("ABC1D23", "RAD-001", 100, 93, 80, 16.25, true,
                     new ViolationResponse.ViolationDetails("MEDIUM", "218-I"), OffsetDateTime.now());
             when(violationService.findByLicensePlate("ABC1D23")).thenReturn(List.of(violation));
 

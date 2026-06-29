@@ -4,8 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 
-import java.time.OffsetDateTime;
-
 public record CaptureRequestDTO(
         @NotBlank @Pattern(regexp = LICENSE_PLATE_REGEX)
         String licensePlate,

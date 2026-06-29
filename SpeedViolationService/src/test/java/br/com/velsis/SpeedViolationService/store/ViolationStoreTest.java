@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,7 +28,7 @@ class ViolationStoreTest {
         @Test
         @DisplayName("should return empty list when no violations saved")
         void noViolations() {
-            var result = store.findByLicensePlate("ABC1D23");
+            List<ViolationResponse> result = store.findByLicensePlate("ABC1D23");
 
             assertThat(result).isEmpty();
         }
@@ -35,10 +36,10 @@ class ViolationStoreTest {
         @Test
         @DisplayName("should return saved violation for license plate")
         void singleViolation() {
-            var violation = aViolation("ABC1D23");
+            ViolationResponse violation = aViolation("ABC1D23");
 
             store.save(violation);
-            var result = store.findByLicensePlate("ABC1D23");
+            List<ViolationResponse> result = store.findByLicensePlate("ABC1D23");
 
             assertThat(result).containsExactly(violation);
         }
@@ -46,12 +47,12 @@ class ViolationStoreTest {
         @Test
         @DisplayName("should return multiple violations for same plate in order")
         void multipleViolationsSamePlate() {
-            var v1 = aViolation("ABC1D23");
-            var v2 = aViolation("ABC1D23");
+            ViolationResponse v1 = aViolation("ABC1D23");
+            ViolationResponse v2 = aViolation("ABC1D23");
 
             store.save(v1);
             store.save(v2);
-            var result = store.findByLicensePlate("ABC1D23");
+            List<ViolationResponse> result = store.findByLicensePlate("ABC1D23");
 
             assertThat(result).containsExactly(v1, v2);
         }
@@ -62,7 +63,7 @@ class ViolationStoreTest {
             store.save(aViolation("ABC1D23"));
             store.save(aViolation("XYZ9A88"));
 
-            var result = store.findByLicensePlate("OTHER");
+            List<ViolationResponse> result = store.findByLicensePlate("OTHER");
 
             assertThat(result).isEmpty();
         }
@@ -73,7 +74,7 @@ class ViolationStoreTest {
             store.save(aViolation("ABC1D23"));
             store.save(aViolation("XYZ9A88"));
 
-            var result = store.findByLicensePlate("ABC1D23");
+            List<ViolationResponse> result = store.findByLicensePlate("ABC1D23");
 
             assertThat(result).hasSize(1);
             assertThat(result.getFirst().licensePlate()).isEqualTo("ABC1D23");
@@ -83,7 +84,7 @@ class ViolationStoreTest {
         @DisplayName("should return immutable list")
         void returnsImmutableList() {
             store.save(aViolation("ABC1D23"));
-            var result = store.findByLicensePlate("ABC1D23");
+            List<ViolationResponse> result = store.findByLicensePlate("ABC1D23");
 
             org.junit.jupiter.api.Assertions.assertThrows(
                     UnsupportedOperationException.class,

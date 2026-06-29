@@ -33,14 +33,14 @@ public class ViolationEvaluateController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        var response = violationService.evaluate(request);
+        ViolationResponse response = violationService.evaluate(request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<List<ViolationResponse>> findByLicensePlate(
             @RequestParam String licensePlate) {
-        var violations = violationService.findByLicensePlate(licensePlate);
+        List<ViolationResponse> violations = violationService.findByLicensePlate(licensePlate);
         return ResponseEntity.ok(violations);
     }
 }
