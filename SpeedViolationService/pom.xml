@@ -132,6 +132,7 @@
 					<testFramework>JUNIT5</testFramework>
 					<contractsDirectory>src/main/resources/contracts</contractsDirectory>
 					<failOnNoContracts>false</failOnNoContracts>
+					<baseClassForTests>br.com.velsis.SpeedViolationService.controller.ContractVerifierBase</baseClassForTests>
 				</configuration>
 			</plugin>
 			<plugin>
