@@ -29,3 +29,8 @@ response:
       severity: "SERIOUS"
       ctbCode: "218-II"
     processedAt: "2026-06-08T14:30:05Z"
+  matchers:
+    body:
+      - path: $.processedAt
+        type: by_regex
+        value: ".*"
