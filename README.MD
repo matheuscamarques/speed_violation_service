@@ -152,24 +152,199 @@ make docker-test
 
 O projeto exige cobertura mínima de **85%** (instrução e branch), verificada por JaCoCo.
 
+## Arquitetura Hexagonal (Ports & Adapters)
+
+O projeto adota **Arquitetura Hexagonal** (Alistair Cockburn) para isolar o domínio de infraestrutura e frameworks, organizado em dois grandes grupos:
+
+```
+src/main/java/br/com/velsis/SpeedViolationService/
+├── domain/                    # NÚCLEO — zero dependências de framework
+│   ├── model/                 #   Entidades e value objects do domínio
+│   ├── port/
+│   │   ├── inbound/           #   Interfaces de entrada (use cases)
+│   │   └── outbound/          #   Interfaces de saída (repositories, etc.)
+│   └── service/               #   Implementação dos use cases
+├── adapter/                   # ADAPTADORES — infraestrutura concreta
+│   ├── inbound/web/           #   Entrada: REST controller
+│   ├── outbound/persistence/  #   Saída: repositórios (in-memory, JPA)
+│   └── config/                #   Configuração dos beans de domínio
+├── dto/                       # Objetos de transferência (contrato da API)
+├── config/                    # Configuration properties
+└── exception/                 # Tratamento global de erros
+```
+
+### Por que hexagonal?
+
+| Princípio | Benefício |
+|-----------|-----------|
+| **Domínio puro** | `domain/` não importa nada do Spring, JPA ou HTTP. Pode ser testado isoladamente. |
+| **Portas como contratos** | `ViolationRepository` e `ViolationEvaluationUseCase` definem fronteiras claras. |
+| **Adaptadores trocáveis** | A persistência pode ser in-memory, JPA/H2, PostgreSQL ou MongoDB sem alterar uma linha do domínio. |
+| **Testabilidade** | O use case é testado com mocks das portas; os adaptadores são testados separadamente. |
+
+### Persistência: in-memory vs H2
+
+O repositório de persistência é selecionado por profile do Spring:
+
+| Profile | Implementação | Uso |
+|---------|--------------|-----|
+| *(default)* | `InMemoryViolationRepository` com `ConcurrentHashMap` | Desenvolvimento e testes rápidos |
+| `h2` | `ViolationRepositoryJpaAdapter` com Spring Data JPA + H2 file-based | Persistência entre reinicializações |
+
+**Por que não JPA direto no domínio?** A regra de negócio (`ViolationEvaluationService`) depende apenas da interface `ViolationRepository`. Se amanhã o banco mudar, troca-se o adaptador — o domínio permanece intacto. O H2 via profile `h2` oferece persistência real sem acoplar o código a um dialeto SQL específico.
+
+```bash
+# Com persistência em memória (padrão)
+mvn spring-boot:run
+
+# Com persistência H2 (arquivo em ./data/speedviolation)
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
+
+# Console H2 disponível em http://localhost:8080/h2-console
+```
+
+## Estilo e design
+
+O código segue convenções deliberadas para manter consistência e previsibilidade:
+
+### Sem `var`
+
+Tipos são sempre declarados explicitamente — a legibilidade não é sacrificada por economia de digitação:
+
+```java
+// ✅ Sim
+Violation violation = Violation.of(...);
+ViolationResponse response = toResponse(violation);
+double tolerance = calculateTolerance(request.speedLimit());
+
+// ❌ Não
+var violation = Violation.of(...);
+var response = toResponse(violation);
+var tolerance = calculateTolerance(request.speedLimit());
+```
+
+### Paradigma funcional
+
+Prefere-se imutabilidade, records, funções puras (métodos `static` que não dependem de estado) e streams a loops imperativos:
+
+```java
+// ✅ Sim — record imutável, static factory, stream com method reference
+public record Violation(UUID id, String licensePlate, ...) {
+    public static Violation of(...) { ... }
+}
+
+public List<ViolationResponse> findByLicensePlate(String licensePlate) {
+    return violationRepository.findByLicensePlate(licensePlate).stream()
+            .map(ViolationEvaluationService::toResponse)
+            .toList();
+}
+
+private static ViolationResponse toResponse(Violation violation) { ... }
+private static double excessPercentage(double speed, double limit) { ... }
+
+// ❌ Não — mutabilidade, loops imperativos, classes anêmicas
+public class Violation {
+    private String licensePlate;
+    public void setLicensePlate(String licensePlate) { ... }
+}
+
+List<ViolationResponse> result = new ArrayList<>();
+for (Violation v : violations) {
+    result.add(toResponse(v));
+}
+```
+
+### Evitar method chaining (fluent interfaces)
+
+Encadeamento é evitado fora de streams, que são expressões funcionais autossuficientes. Construtores com parâmetros nomeados (via records ou classes) substituem builders:
+
+```java
+// ✅ Sim — construtor com parâmetros explícitos
+return new ViolationResponse(
+        licensePlate, equipmentId, measuredSpeed, consideredSpeed,
+        speedLimit, excessPercentage, hasViolation, violation, processedAt
+);
+
+// ❌ Não
+return new ViolationResponse.Builder()
+        .licensePlate(licensePlate)
+        .equipmentId(equipmentId)
+        .measuredSpeed(measuredSpeed)
+        .build();
+```
+
+Exceção: cadeias funcionais em streams e operações matemáticas são aceitas por serem autoexplicativas:
+
+```java
+// ✅ Aceito — stream funcional
+return repository.findByLicensePlate(plate).stream()
+        .map(Entity::toDomain)
+        .toList();
+
+// ✅ Aceito — operação matemática
+return BigDecimal.valueOf((speed - limit) / limit * 100)
+        .setScale(2, RoundingMode.HALF_UP)
+        .doubleValue();
+```
+
+### Evitar operador ternário
+
+Condicionais usam `if/else` com retorno explícito — o fluxo fica evidente sem compressão sintática:
+
+```java
+// ✅ Sim
+private ViolationSeverity classifySeverity(double excess) {
+    if (excess <= config.getExcessLimitMedium()) {
+        return ViolationSeverity.MEDIUM;
+    }
+    if (excess <= config.getExcessLimitSerious()) {
+        return ViolationSeverity.SERIOUS;
+    }
+    return ViolationSeverity.VERY_SERIOUS;
+}
+
+// ❌ Não
+return excess <= config.getExcessLimitMedium()
+        ? ViolationSeverity.MEDIUM
+        : excess <= config.getExcessLimitSerious()
+            ? ViolationSeverity.SERIOUS
+            : ViolationSeverity.VERY_SERIOUS;
+```
+
+```java
+// ✅ Sim
+private double calculateTolerance(double speedLimit) {
+    if (speedLimit > config.getThreshold()) {
+        return speedLimit * (config.getTolerancePercentage() / 100.0);
+    }
+    return config.getToleranceFixed();
+}
+
+// ❌ Não
+return speedLimit > config.getThreshold()
+        ? speedLimit * (config.getTolerancePercentage() / 100.0)
+        : config.getToleranceFixed();
+```
+
 ## Decisões técnicas e justificativas
 
-### Organização do código (RNF1)
+### Organização do código
 
-A arquitetura segue os princípios de **separação de responsabilidades** com pacotes bem definidos:
-
-- **`controller`** – camada de entrada HTTP. Contém apenas validação de cabeçalho (`x-origin`) e delega ao service. Sem lógica de negócio.
-- **`service`** – lógica central de avaliação. Aplica a tolerância (fixa de 7 km/h para limites ≤ 100 km/h, percentual de 7% para > 100 km/h), calcula o excesso e classifica a gravidade conforme o CTB.
-- **`model`** – domínio puro. `Violation` (record imutável) e `ViolationSeverity` (enum com códigos do CTB). Sem dependências do framework.
-- **`dto`** – objetos de transferência com validação declarativa (`@NotBlank`, `@Pattern`, `@Positive`, `@PastOrPresent`). Desacoplam o contrato da API do modelo interno.
-- **`store`** – abstração de persistência. Implementação em memória com `ConcurrentHashMap` para simplicidade, trocável por um repositório JPA sem impacto nas demais camadas.
-- **`config`** – configurações externalizadas via `@ConfigurationProperties`, permitindo ajustar tolerâncias e limites sem recompilar.
-- **`exception`** – tratamento centralizado de erros com `@RestControllerAdvice`, garantindo respostas consistentes (400 para validação, 500 para erros internos) e logs estruturados.
+- **`domain/model/`** – entidades do domínio (`Violation` como record, `ViolationSeverity` como enum). Sem qualquer dependência de framework.
+- **`domain/port/`** – interfaces que definem os contratos entre o núcleo e o mundo externo.
+- **`domain/service/`** – lógica de negócio pura, dependendo apenas das portas.
+- **`adapter/inbound/web/`** – controllers REST com validação exclusiva de transporte (`x-origin`) e delegação imediata ao use case.
+- **`adapter/outbound/persistence/`** – implementações concretas de `ViolationRepository`: `InMemoryViolationRepository` (profile default) e `ViolationRepositoryJpaAdapter` (profile `h2`).
+- **`adapter/outbound/config/`** – adaptador que expõe `SpeedViolationProperties` ao domínio via `ViolationConfigPort`.
+- **`dto/`** – objetos de transferência com validação declarativa (`@NotBlank`, `@Pattern`, `@Positive`, `@PastOrPresent`). Desacoplam o contrato da API do modelo interno.
+- **`config/`** – propriedades externalizadas (`@ConfigurationProperties`) para ajustar tolerâncias e limites sem recompilar.
+- **`exception/`** – tratamento centralizado com `@RestControllerAdvice`, respostas consistentes e logs estruturados.
 
 ### Justificativas
 
-- **`record` em vez de classe** – imutabilidade por padrão, elimina boilerplate de equals/hashCode/toString, ideal para DTOs e modelos de valor.
-- **`ViolationStore` em vez de JPA direto** – a regra de negócio independe do banco; a store pode ser substituída por uma implementação JPA ou MongoDB sem alterar o service.
+- **`record` em vez de classe** – imutabilidade por padrão, equals/hashCode/toString gratuitos, ideal para value objects e DTOs.
+- **Porta `ViolationRepository` em vez de JPA direto no service** – a regra de negócio independe do banco; a implementação concreta (in-memory ou JPA) é injetada sem impacto no domínio.
+- **Profiles para alternar persistência** – `h2` ativa JPA; sem profile, usa-se `ConcurrentHashMap`. Nenhuma linha do domínio muda.
 - **Tolerância variável** – limites até 100 km/h usam tolerância fixa de 7 km/h; acima disso, 7% (prática adotada por órgãos de trânsito brasileiros).
 - **Classificação por excesso percentual** – alinhada aos arts. 218-I (até 20%), 218-II (20% a 50%) e 218-III (acima de 50%) do CTB.
 - **Validação no controller** – `x-origin` validado no controller por ser concern de transporte; os demais campos validados no DTO com Bean Validation.
