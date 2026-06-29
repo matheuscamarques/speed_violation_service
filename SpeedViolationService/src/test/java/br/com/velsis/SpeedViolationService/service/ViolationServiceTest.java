@@ -3,6 +3,8 @@ package br.com.velsis.SpeedViolationService.service;
 import br.com.velsis.SpeedViolationService.config.SpeedViolationProperties;
 import br.com.velsis.SpeedViolationService.dto.CaptureRequestDTO;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
+import br.com.velsis.SpeedViolationService.model.Violation;
+import br.com.velsis.SpeedViolationService.model.ViolationSeverity;
 import br.com.velsis.SpeedViolationService.store.ViolationStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +15,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -242,6 +245,23 @@ class ViolationServiceTest {
 
             assertThat(result).isEmpty();
         }
+
+        @Test
+        @DisplayName("should return violations when they exist for the plate")
+        void withViolations() {
+            var violation = new Violation(
+                    UUID.randomUUID(), "ABC1D23", "RAD-001", 92, 85, 60, 41.67,
+                    ViolationSeverity.SERIOUS, "218-II",
+                    OffsetDateTime.parse("2026-06-08T14:30:00Z"), OffsetDateTime.now()
+            );
+            when(violationStore.findByLicensePlate("ABC1D23")).thenReturn(List.of(violation));
+
+            List<ViolationResponse> result = service.findByLicensePlate("ABC1D23");
+
+            assertThat(result).hasSize(1);
+            assertThat(result.getFirst().licensePlate()).isEqualTo("ABC1D23");
+            assertThat(result.getFirst().violation().severity()).isEqualTo("SERIOUS");
+        }
     }
 
     @Nested
@@ -266,6 +286,142 @@ class ViolationServiceTest {
             assertThat(response.excessPercentage()).isEqualTo(expectedExcess);
             assertThat(response.violation().severity()).isEqualTo(expectedSeverity);
             assertThat(response.violation().ctbCode()).isEqualTo(expectedCtb);
+        }
+    }
+
+    @Nested
+    @DisplayName("Excess percentage edge cases")
+    class ExcessPercentageEdgeCases {
+
+        @Test
+        @DisplayName("should return 0% excess when measured speed equals limit plus tolerance")
+        void zeroExcess() {
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 67, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.excessPercentage()).isZero();
+            assertThat(response.hasViolation()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should round half-up for excess percentage")
+        void halfUpRounding() {
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 80, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.consideredSpeed()).isEqualTo(73.0);
+            assertThat(response.excessPercentage()).isEqualTo(21.67);
+        }
+
+        @Test
+        @DisplayName("should handle very large excess values")
+        void highExcess() {
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 300, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.consideredSpeed()).isEqualTo(293.0);
+            assertThat(response.excessPercentage()).isEqualTo(388.33);
+            assertThat(response.violation().severity()).isEqualTo("VERY_SERIOUS");
+        }
+    }
+
+    @Nested
+    @DisplayName("Severity classification edge cases")
+    class SeverityEdgeCases {
+
+        @Test
+        @DisplayName("should classify MEDIUM for excess just above 0%")
+        void mediumJustAboveZero() {
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 68, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.hasViolation()).isTrue();
+            assertThat(response.excessPercentage()).isEqualTo(1.67);
+            assertThat(response.violation().severity()).isEqualTo("MEDIUM");
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                "86, 60, 20.00, MEDIUM",
+                "87, 60, 21.67, SERIOUS",
+                "104, 60, 50.00, SERIOUS",
+                "105, 60, 51.67, VERY_SERIOUS"
+        })
+        @DisplayName("should classify severity at exact boundary values")
+        void severityBoundaries(double measured, double limit, double expectedExcess, String expectedSeverity) {
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", measured, limit, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.hasViolation()).isTrue();
+            assertThat(response.excessPercentage()).isEqualTo(expectedExcess);
+            assertThat(response.violation().severity()).isEqualTo(expectedSeverity);
+        }
+    }
+
+    @Nested
+    @DisplayName("Custom configuration")
+    class CustomConfiguration {
+
+        @Test
+        @DisplayName("should use custom fixed tolerance when configured")
+        void customFixedTolerance() {
+            properties.setToleranceFixed(5.0);
+
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 64, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.consideredSpeed()).isEqualTo(59.0);
+            assertThat(response.hasViolation()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should use custom percentage tolerance when configured")
+        void customPercentageTolerance() {
+            properties.setTolerancePercentage(10.0);
+            properties.setThreshold(50.0);
+
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 60, 50, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.consideredSpeed()).isEqualTo(55.0);
+            assertThat(response.excessPercentage()).isEqualTo(10.0);
+        }
+
+        @Test
+        @DisplayName("should use custom severity limits when configured")
+        void customSeverityLimits() {
+            properties.setExcessLimitMedium(10.0);
+            properties.setExcessLimitSerious(30.0);
+
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 80, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            assertThat(response.hasViolation()).isTrue();
+            assertThat(response.excessPercentage()).isEqualTo(21.67);
+            assertThat(response.violation().severity()).isEqualTo("VERY_SERIOUS");
+        }
+
+        @Test
+        @DisplayName("should use custom threshold value")
+        void customThreshold() {
+            properties.setThreshold(80.0);
+            properties.setTolerancePercentage(10.0);
+
+            CaptureRequestDTO request = new CaptureRequestDTO("ABC1D23", 96, 80, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+
+            ViolationResponse response = service.evaluate(request);
+
+            double tolerance = 80 * 0.10;
+            assertThat(response.consideredSpeed()).isEqualTo(96 - tolerance);
+            assertThat(response.hasViolation()).isFalse();
         }
     }
 
