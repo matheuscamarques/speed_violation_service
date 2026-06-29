@@ -3,6 +3,7 @@ FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 COPY ./SpeedViolationService/pom.xml .
 RUN mvn dependency:resolve -B && mvn dependency:resolve -DincludeScope=test -B
+COPY ./SpeedViolationService/checkstyle.xml .
 COPY ./SpeedViolationService/src ./src
 RUN mvn clean package -DskipTests -B
 
