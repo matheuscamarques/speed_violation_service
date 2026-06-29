@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: SpeedViolationService
+
+speed:
+  violation:
+    tolerance-fixed: 7.0
+    tolerance-percentage: 7.0
+    threshold: 100.0
+    excess-limit-medium: 20.0
+    excess-limit-serious: 50.0
