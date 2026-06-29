@@ -1,37 +1,37 @@
-package br.com.velsis.SpeedViolationService.service;
+package br.com.velsis.SpeedViolationService.domain.service;
 
-import br.com.velsis.SpeedViolationService.config.SpeedViolationProperties;
+import br.com.velsis.SpeedViolationService.domain.model.Violation;
+import br.com.velsis.SpeedViolationService.domain.model.ViolationSeverity;
+import br.com.velsis.SpeedViolationService.domain.port.inbound.ViolationEvaluationUseCase;
+import br.com.velsis.SpeedViolationService.domain.port.outbound.ViolationConfigPort;
+import br.com.velsis.SpeedViolationService.domain.port.outbound.ViolationRepository;
 import br.com.velsis.SpeedViolationService.dto.CaptureRequestDTO;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse.ViolationDetails;
-import br.com.velsis.SpeedViolationService.model.Violation;
-import br.com.velsis.SpeedViolationService.model.ViolationSeverity;
-import br.com.velsis.SpeedViolationService.store.ViolationStore;
-import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-@Service
-public class ViolationService {
+public class ViolationEvaluationService implements ViolationEvaluationUseCase {
 
-    private final ViolationStore violationStore;
-    private final SpeedViolationProperties properties;
+    private final ViolationRepository violationRepository;
+    private final ViolationConfigPort config;
 
-    public ViolationService(ViolationStore violationStore, SpeedViolationProperties properties) {
-        this.violationStore = violationStore;
-        this.properties = properties;
+    public ViolationEvaluationService(ViolationRepository violationRepository, ViolationConfigPort config) {
+        this.violationRepository = violationRepository;
+        this.config = config;
     }
 
     private double calculateTolerance(double speedLimit) {
-        if (speedLimit > properties.getThreshold()) {
-            return speedLimit * (properties.getTolerancePercentage() / 100.0);
+        if (speedLimit > config.getThreshold()) {
+            return speedLimit * (config.getTolerancePercentage() / 100.0);
         }
-        return properties.getToleranceFixed();
+        return config.getToleranceFixed();
     }
 
+    @Override
     public ViolationResponse evaluate(CaptureRequestDTO request) {
         double tolerance = calculateTolerance(request.speedLimit());
         double consideredSpeed = Math.max(0, request.measuredSpeed() - tolerance);
@@ -52,13 +52,14 @@ public class ViolationService {
                 request.captureTimestamp(), now
         );
 
-        violationStore.save(violation);
+        violationRepository.save(violation);
         return toResponse(violation);
     }
 
+    @Override
     public List<ViolationResponse> findByLicensePlate(String licensePlate) {
-        return violationStore.findByLicensePlate(licensePlate).stream()
-                .map(ViolationService::toResponse)
+        return violationRepository.findByLicensePlate(licensePlate).stream()
+                .map(ViolationEvaluationService::toResponse)
                 .toList();
     }
 
@@ -97,10 +98,10 @@ public class ViolationService {
     }
 
     private ViolationSeverity classifySeverity(double excess) {
-        if (excess <= properties.getExcessLimitMedium()) {
+        if (excess <= config.getExcessLimitMedium()) {
             return ViolationSeverity.MEDIUM;
         }
-        if (excess <= properties.getExcessLimitSerious()) {
+        if (excess <= config.getExcessLimitSerious()) {
             return ViolationSeverity.SERIOUS;
         }
         return ViolationSeverity.VERY_SERIOUS;

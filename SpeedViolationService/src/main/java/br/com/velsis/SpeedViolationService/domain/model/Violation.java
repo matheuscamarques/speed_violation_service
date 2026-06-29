@@ -1,4 +1,4 @@
-package br.com.velsis.SpeedViolationService.model;
+package br.com.velsis.SpeedViolationService.domain.model;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
