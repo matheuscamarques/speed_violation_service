@@ -55,6 +55,13 @@ make docker-build && make docker-run
 
 A aplicação inicia em `http://localhost:8080`.
 
+## Deploy
+
+Acesse a instância em produção no Railway:
+
+- **API:** `https://speedviolationservice-production.up.railway.app`
+- **Swagger UI:** `https://speedviolationservice-production.up.railway.app/swagger-ui/index.html`
+
 ## Exemplos de uso com curl
 
 ### Infração (SERIOUS)
