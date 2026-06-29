@@ -1,8 +1,10 @@
 package br.com.velsis.SpeedViolationService.service;
 
+import br.com.velsis.SpeedViolationService.config.SpeedViolationProperties;
 import br.com.velsis.SpeedViolationService.dto.CaptureRequestDTO;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse.ViolationDetails;
+import br.com.velsis.SpeedViolationService.model.Violation;
 import br.com.velsis.SpeedViolationService.model.ViolationSeverity;
 import br.com.velsis.SpeedViolationService.store.ViolationStore;
 import org.springframework.stereotype.Service;
@@ -15,18 +17,24 @@ import java.util.List;
 @Service
 public class ViolationService {
 
-    private static final double TOLERANCE = 7.0;
-    private static final double EXCESS_LIMIT_MEDIUM = 20.0;
-    private static final double EXCESS_LIMIT_SERIOUS = 50.0;
-
     private final ViolationStore violationStore;
+    private final SpeedViolationProperties properties;
 
-    public ViolationService(ViolationStore violationStore) {
+    public ViolationService(ViolationStore violationStore, SpeedViolationProperties properties) {
         this.violationStore = violationStore;
+        this.properties = properties;
+    }
+
+    private double calculateTolerance(double speedLimit) {
+        if (speedLimit > properties.getThreshold()) {
+            return speedLimit * (properties.getTolerancePercentage() / 100.0);
+        }
+        return properties.getToleranceFixed();
     }
 
     public ViolationResponse evaluate(CaptureRequestDTO request) {
-        double consideredSpeed = Math.max(0, request.measuredSpeed() - TOLERANCE);
+        double tolerance = calculateTolerance(request.speedLimit());
+        double consideredSpeed = Math.max(0, request.measuredSpeed() - tolerance);
         double speedLimit = request.speedLimit();
         boolean hasViolation = consideredSpeed > speedLimit;
 
@@ -35,14 +43,37 @@ public class ViolationService {
         }
 
         double excess = excessPercentage(consideredSpeed, speedLimit);
-        ViolationDetails details = classifyViolation(excess);
-        ViolationResponse response = violationResponse(request, consideredSpeed, speedLimit, excess, details);
-        violationStore.save(response);
-        return response;
+        ViolationSeverity severity = classifySeverity(excess);
+        OffsetDateTime now = OffsetDateTime.now();
+
+        Violation violation = Violation.of(
+                request.licensePlate(), request.equipmentId(), request.measuredSpeed(),
+                consideredSpeed, speedLimit, excess, severity,
+                request.captureTimestamp(), now
+        );
+
+        violationStore.save(violation);
+        return toResponse(violation);
     }
 
     public List<ViolationResponse> findByLicensePlate(String licensePlate) {
-        return violationStore.findByLicensePlate(licensePlate);
+        return violationStore.findByLicensePlate(licensePlate).stream()
+                .map(ViolationService::toResponse)
+                .toList();
+    }
+
+    private static ViolationResponse toResponse(Violation violation) {
+        return new ViolationResponse(
+                violation.licensePlate(),
+                violation.equipmentId(),
+                violation.measuredSpeed(),
+                violation.consideredSpeed(),
+                violation.speedLimit(),
+                violation.excessPercentage(),
+                true,
+                new ViolationDetails(violation.severity().name(), violation.ctbCode()),
+                violation.processedAt()
+        );
     }
 
     private static ViolationResponse noViolationResponse(CaptureRequestDTO request, double consideredSpeed, double speedLimit) {
@@ -59,34 +90,19 @@ public class ViolationService {
         );
     }
 
-    private static ViolationResponse violationResponse(CaptureRequestDTO request, double consideredSpeed,
-                                                        double speedLimit, double excess, ViolationDetails details) {
-        return new ViolationResponse(
-                request.licensePlate(),
-                request.equipmentId(),
-                request.measuredSpeed(),
-                consideredSpeed,
-                speedLimit,
-                excess,
-                true,
-                details,
-                OffsetDateTime.now()
-        );
-    }
-
     private static double excessPercentage(double speed, double limit) {
         return BigDecimal.valueOf((speed - limit) / limit * 100)
                 .setScale(2, RoundingMode.HALF_UP)
                 .doubleValue();
     }
 
-    private static ViolationDetails classifyViolation(double excess) {
-        if (excess <= EXCESS_LIMIT_MEDIUM) {
-            return new ViolationDetails(ViolationSeverity.MEDIUM.name(), ViolationSeverity.MEDIUM.ctbCode());
+    private ViolationSeverity classifySeverity(double excess) {
+        if (excess <= properties.getExcessLimitMedium()) {
+            return ViolationSeverity.MEDIUM;
         }
-        if (excess <= EXCESS_LIMIT_SERIOUS) {
-            return new ViolationDetails(ViolationSeverity.SERIOUS.name(), ViolationSeverity.SERIOUS.ctbCode());
+        if (excess <= properties.getExcessLimitSerious()) {
+            return ViolationSeverity.SERIOUS;
         }
-        return new ViolationDetails(ViolationSeverity.GRAVE.name(), ViolationSeverity.GRAVE.ctbCode());
+        return ViolationSeverity.VERY_SERIOUS;
     }
 }

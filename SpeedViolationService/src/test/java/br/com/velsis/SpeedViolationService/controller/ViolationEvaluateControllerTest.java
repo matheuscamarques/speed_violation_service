@@ -221,13 +221,22 @@ class ViolationEvaluateControllerTest {
     }
 
     @Test
+    @DisplayName("RF6.6: should return 400 when captureTimestamp is null")
+    void nullCaptureTimestamp() throws Exception {
+        String body = """
+                {"licensePlate":"ABC1D23","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":null}
+                """;
+        performPost("FIXED", body).andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("should return 400 when x-origin is lowercase")
     void invalidOriginCase() throws Exception {
         performPost("fixed", validBody).andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("should return 200 with valid old format license plate (ABC1234)")
+    @DisplayName("RF6.3: should return 200 with valid old format license plate (ABC1234)")
     void validLicensePlateOldFormat() throws Exception {
         ViolationResponse response = new ViolationResponse("ABC1234", "RAD-CWB-001", 50, 43, 60, 0, false, null, OffsetDateTime.now());
         when(violationService.evaluate(any())).thenReturn(response);

@@ -1,6 +1,6 @@
 package br.com.velsis.SpeedViolationService.store;
 
-import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
+import br.com.velsis.SpeedViolationService.model.Violation;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -11,22 +11,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class ViolationStore {
 
-    private final ConcurrentHashMap<String, List<ViolationResponse>> violations = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<Violation>> violations = new ConcurrentHashMap<>();
 
-    public void save(ViolationResponse response) {
-        violations.compute(response.licensePlate(), (key, list) -> {
-            List<ViolationResponse> newList;
+    public void save(Violation violation) {
+        violations.compute(violation.licensePlate(), (key, list) -> {
+            List<Violation> newList;
             if (list == null) {
                 newList = new ArrayList<>();
             } else {
                 newList = new ArrayList<>(list);
             }
-            newList.add(response);
+            newList.add(violation);
             return Collections.unmodifiableList(newList);
         });
     }
 
-    public List<ViolationResponse> findByLicensePlate(String licensePlate) {
+    public List<Violation> findByLicensePlate(String licensePlate) {
         return violations.getOrDefault(licensePlate, List.of());
     }
 }

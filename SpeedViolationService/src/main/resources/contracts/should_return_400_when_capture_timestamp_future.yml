@@ -1,0 +1,18 @@
+request:
+  method: POST
+  url: /api/v1/violations/evaluate
+  headers:
+    x-origin: FIXED
+  body:
+    licensePlate: "ABC1D23"
+    measuredSpeed: 50
+    speedLimit: 60
+    equipmentId: "RAD-CWB-001"
+    captureTimestamp: "2099-01-01T00:00:00Z"
+  matchers:
+    body:
+      - path: $.licensePlate
+        type: by_regex
+        value: "[A-Z]{3}[0-9][A-Z][0-9]{2}|[A-Z]{3}[0-9]{4}"
+response:
+  status: 400
