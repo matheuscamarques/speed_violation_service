@@ -2,6 +2,7 @@ package br.com.velsis.SpeedViolationService.service;
 
 import br.com.velsis.SpeedViolationService.dto.CaptureRequestDTO;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
+import br.com.velsis.SpeedViolationService.store.ViolationStore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,14 +11,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class ViolationServiceTest {
 
     private ViolationService service;
+    private ViolationStore violationStore;
 
     @BeforeEach
     void setUp() {
-        service = new ViolationService();
+        violationStore = mock(ViolationStore.class);
+        service = new ViolationService(violationStore);
     }
 
     @Nested
@@ -214,6 +218,19 @@ class ViolationServiceTest {
 
             assertThat(response.consideredSpeed()).isEqualTo(expectedConsidered);
             assertThat(response.hasViolation()).isEqualTo(expectedViolation);
+        }
+    }
+
+    @Nested
+    @DisplayName("Find by license plate")
+    class FindByLicensePlate {
+
+        @Test
+        @DisplayName("should return empty list when no violations exist")
+        void noViolations() {
+            var result = service.findByLicensePlate("ABC1D23");
+
+            assertThat(result).isEmpty();
         }
     }
 

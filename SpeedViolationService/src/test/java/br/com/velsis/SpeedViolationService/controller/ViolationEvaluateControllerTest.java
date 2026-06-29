@@ -4,6 +4,7 @@ import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
 import br.com.velsis.SpeedViolationService.service.ViolationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -13,10 +14,12 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -233,6 +236,47 @@ class ViolationEvaluateControllerTest {
                 {"licensePlate":"ABC1234","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
                 """;
         performPost("FIXED", body).andExpect(status().isOk());
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/violations?licensePlate=")
+    class FindByLicensePlate {
+
+        @Test
+        @DisplayName("should return 200 with empty list when no violations")
+        void noViolations() throws Exception {
+            when(violationService.findByLicensePlate("ABC1D23")).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/v1/violations")
+                            .param("licensePlate", "ABC1D23"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isEmpty());
+        }
+
+        @Test
+        @DisplayName("should return 200 with violations list")
+        void withViolations() throws Exception {
+            var violation = new ViolationResponse("ABC1D23", "RAD-001", 100, 93, 80, 16.25, true,
+                    new ViolationResponse.ViolationDetails("MEDIUM", "218-I"), OffsetDateTime.now());
+            when(violationService.findByLicensePlate("ABC1D23")).thenReturn(List.of(violation));
+
+            mockMvc.perform(get("/api/v1/violations")
+                            .param("licensePlate", "ABC1D23"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].licensePlate").value("ABC1D23"))
+                    .andExpect(jsonPath("$[0].violation.severity").value("MEDIUM"));
+        }
+
+        @Test
+        @DisplayName("should return 200 with empty list when plate has no violations")
+        void plateWithoutViolations() throws Exception {
+            when(violationService.findByLicensePlate("ZZZ0000")).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/v1/violations")
+                            .param("licensePlate", "ZZZ0000"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isEmpty());
+        }
     }
 
     private ResultActions performPost(String origin, String body) throws Exception {

@@ -4,11 +4,13 @@ import br.com.velsis.SpeedViolationService.dto.CaptureRequestDTO;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse.ViolationDetails;
 import br.com.velsis.SpeedViolationService.model.ViolationSeverity;
+import br.com.velsis.SpeedViolationService.store.ViolationStore;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 public class ViolationService {
@@ -17,6 +19,12 @@ public class ViolationService {
     private static final double EXCESS_LIMIT_MEDIUM = 20.0;
     private static final double EXCESS_LIMIT_SERIOUS = 50.0;
 
+    private final ViolationStore violationStore;
+
+    public ViolationService(ViolationStore violationStore) {
+        this.violationStore = violationStore;
+    }
+
     public ViolationResponse evaluate(CaptureRequestDTO request) {
         var consideredSpeed = Math.max(0, request.measuredSpeed() - TOLERANCE);
         var speedLimit = request.speedLimit();
@@ -24,7 +32,7 @@ public class ViolationService {
         var excess = hasViolation ? excessPercentage(consideredSpeed, speedLimit) : 0;
         var details = hasViolation ? classifyViolation(excess) : null;
 
-        return new ViolationResponse(
+        var response = new ViolationResponse(
                 request.licensePlate(),
                 request.equipmentId(),
                 request.measuredSpeed(),
@@ -35,6 +43,16 @@ public class ViolationService {
                 details,
                 OffsetDateTime.now()
         );
+
+        if (hasViolation) {
+            violationStore.save(response);
+        }
+
+        return response;
+    }
+
+    public List<ViolationResponse> findByLicensePlate(String licensePlate) {
+        return violationStore.findByLicensePlate(licensePlate);
     }
 
     private static double excessPercentage(double speed, double limit) {
