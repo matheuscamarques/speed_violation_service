@@ -2,6 +2,9 @@
 
 Microserviço para avaliação de infrações de excesso de velocidade com base nos arts. 218-I, 218-II e 218-III do CTB (Código de Trânsito Brasileiro).
 
+## Rascunho
+![alt text](image.png)
+
 ## Tecnologias
 
 - **Java 21** – versão LTS com records, pattern matching e sealed classes
