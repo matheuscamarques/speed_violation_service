@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -90,6 +92,25 @@ class GlobalExceptionHandlerTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400))
                     .andExpect(jsonPath("$.error").value("Malformed request body"));
+        }
+
+        @Test
+        @DisplayName("should return 400 with ErrorResponse for HandlerMethodValidationException")
+        void handlerMethodValidation() throws Exception {
+            when(violationEvaluationUseCase.evaluate(any())).thenThrow(mock(HandlerMethodValidationException.class));
+
+            String body = """
+                    {"licensePlate":"ABC1D23","measuredSpeed":92,"speedLimit":60,"equipmentId":"RAD-001","captureTimestamp":"2026-06-08T14:30:00Z"}
+                    """;
+
+            mockMvc.perform(post("/api/v1/violations/evaluate")
+                            .header("x-origin", "FIXED")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.error").value("Validation failed"))
+                    .andExpect(jsonPath("$.path").value("/api/v1/violations/evaluate"));
         }
     }
 
