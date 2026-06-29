@@ -3,6 +3,7 @@ request:
   url: /api/v1/violations/evaluate
   headers:
     x-origin: FIXED
+    Content-Type: application/json
   body:
     licensePlate: "ABC1D23"
     measuredSpeed: 67
