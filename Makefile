@@ -1,14 +1,24 @@
+MAVEN = ./SpeedViolationService/mvnw
+
 run:
-	cd ./SpeedViolationService && mvn spring-boot:run
+	cd ./SpeedViolationService && $(MAVEN) spring-boot:run
 
 build:
-	cd ./SpeedViolationService && mvn clean package -DskipTests
+	cd ./SpeedViolationService && $(MAVEN) clean package -DskipTests
+
+checkstyle:
+	cd ./SpeedViolationService && $(MAVEN) validate
 
 test:
-	cd ./SpeedViolationService && mvn test
+	cd ./SpeedViolationService && $(MAVEN) test
+
+ci: checkstyle test
 
 coverage:
-	cd ./SpeedViolationService && mvn clean test jacoco:report
+	cd ./SpeedViolationService && $(MAVEN) clean test jacoco:report
+
+verify:
+	cd ./SpeedViolationService && $(MAVEN) verify -Dspring-cloud-contract.skip=true -Dcontract.verifier.skip=true
 
 docker-build:
 	docker build -t speed-violation-service .

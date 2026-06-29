@@ -17,7 +17,6 @@ Microserviço para avaliação de infrações de excesso de velocidade com base 
 ## Pré-requisitos
 
 - JDK 21
-- Maven 3.9+
 - Docker (opcional)
 - Make (opcional, mas recomendado)
 
@@ -27,12 +26,25 @@ Microserviço para avaliação de infrações de excesso de velocidade com base 
 # Desenvolvimento (hot reload)
 make run
 # ou
-cd SpeedViolationService && mvn spring-boot:run
+cd SpeedViolationService && ./mvnw spring-boot:run
 
 # Build
 make build
 # ou
-cd SpeedViolationService && mvn clean package -DskipTests
+cd SpeedViolationService && ./mvnw clean package -DskipTests
+
+# Checkstyle (valida convenções)
+make checkstyle
+# ou
+cd SpeedViolationService && ./mvnw validate
+
+# Testes
+make test
+# ou
+cd SpeedViolationService && ./mvnw test
+
+# CI completo (checkstyle + testes)
+make ci
 
 # Docker
 make docker-build && make docker-run
@@ -195,10 +207,10 @@ O repositório de persistência é selecionado por profile do Spring:
 
 ```bash
 # Com persistência em memória (padrão)
-mvn spring-boot:run
+./mvnw spring-boot:run
 
 # Com persistência H2 (arquivo em ./data/speedviolation)
-mvn spring-boot:run -Dspring-boot.run.profiles=h2
+./mvnw spring-boot:run -Dspring-boot.run.profiles=h2
 
 # Console H2 disponível em http://localhost:8080/h2-console
 ```
