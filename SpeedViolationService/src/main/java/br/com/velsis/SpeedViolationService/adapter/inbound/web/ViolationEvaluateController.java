@@ -30,7 +30,7 @@ public class ViolationEvaluateController {
             @Valid @RequestBody CaptureRequestDTO request) {
 
         if (!VALID_ORIGINS.contains(origin)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
         ViolationResponse response = violationEvaluationUseCase.evaluate(request);

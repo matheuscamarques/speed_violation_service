@@ -24,9 +24,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        CaptureRequestDTO target = ex.getBindingResult().getTarget() instanceof CaptureRequestDTO dto ? dto : null;
-        String licensePlate = target != null ? target.licensePlate() : null;
-        String equipmentId = target != null ? target.equipmentId() : null;
+        Object bindingTarget = ex.getBindingResult().getTarget();
+        String licensePlate = null;
+        String equipmentId = null;
+        if (bindingTarget instanceof CaptureRequestDTO dto) {
+            licensePlate = dto.licensePlate();
+            equipmentId = dto.equipmentId();
+        }
 
         String fieldErrors = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
@@ -85,6 +89,6 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 OffsetDateTime.now()
         );
-        return ResponseEntity.status(status).body(body);
+        return new ResponseEntity<>(body, status);
     }
 }

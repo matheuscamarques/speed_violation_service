@@ -33,7 +33,7 @@ class ViolationServiceTest {
     @BeforeEach
     void setUp() {
         violationRepository = mock(ViolationRepository.class);
-        var properties = new SpeedViolationProperties();
+        SpeedViolationProperties properties = new SpeedViolationProperties();
         config = new SpeedViolationConfigAdapter(properties);
         service = new ViolationEvaluationService(violationRepository, config);
     }
@@ -252,7 +252,7 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should return violations when they exist for the plate")
         void withViolations() {
-            var violation = new Violation(
+            Violation violation = new Violation(
                     UUID.randomUUID(), "ABC1D23", "RAD-001", 92, 85, 60, 41.67,
                     ViolationSeverity.SERIOUS, "218-II",
                     OffsetDateTime.parse("2026-06-08T14:30:00Z"), OffsetDateTime.now()
@@ -373,7 +373,7 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should use custom fixed tolerance when configured")
         void customFixedTolerance() {
-            var properties = new SpeedViolationProperties();
+            SpeedViolationProperties properties = new SpeedViolationProperties();
             properties.setToleranceFixed(5.0);
             config = new SpeedViolationConfigAdapter(properties);
             service = new ViolationEvaluationService(violationRepository, config);
@@ -389,7 +389,7 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should use custom percentage tolerance when configured")
         void customPercentageTolerance() {
-            var properties = new SpeedViolationProperties();
+            SpeedViolationProperties properties = new SpeedViolationProperties();
             properties.setTolerancePercentage(10.0);
             properties.setThreshold(49.0);
             config = new SpeedViolationConfigAdapter(properties);
@@ -406,7 +406,7 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should use custom severity limits when configured")
         void customSeverityLimits() {
-            var properties = new SpeedViolationProperties();
+            SpeedViolationProperties properties = new SpeedViolationProperties();
             properties.setExcessLimitMedium(10.0);
             properties.setExcessLimitSerious(30.0);
             config = new SpeedViolationConfigAdapter(properties);
@@ -424,7 +424,7 @@ class ViolationServiceTest {
         @Test
         @DisplayName("should use custom threshold value")
         void customThreshold() {
-            var properties = new SpeedViolationProperties();
+            SpeedViolationProperties properties = new SpeedViolationProperties();
             properties.setThreshold(79.0);
             properties.setTolerancePercentage(10.0);
             config = new SpeedViolationConfigAdapter(properties);

@@ -85,7 +85,7 @@ class CaptureRequestDTOTest {
         @Test
         @DisplayName("should pass validation for valid Mercosul plate")
         void validMercosulPlate() {
-            var dto = new CaptureRequestDTO("ABC1D23", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+            CaptureRequestDTO dto = new CaptureRequestDTO("ABC1D23", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
             Set<ConstraintViolation<CaptureRequestDTO>> violations = validator.validate(dto);
             assertThat(violations).noneMatch(v -> v.getPropertyPath().toString().equals("licensePlate"));
         }
@@ -93,7 +93,7 @@ class CaptureRequestDTOTest {
         @Test
         @DisplayName("should pass validation for valid old format plate")
         void validOldFormatPlate() {
-            var dto = new CaptureRequestDTO("ABC1234", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+            CaptureRequestDTO dto = new CaptureRequestDTO("ABC1234", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
             Set<ConstraintViolation<CaptureRequestDTO>> violations = validator.validate(dto);
             assertThat(violations).noneMatch(v -> v.getPropertyPath().toString().equals("licensePlate"));
         }
@@ -101,7 +101,7 @@ class CaptureRequestDTOTest {
         @Test
         @DisplayName("should fail validation for invalid plate")
         void invalidPlate() {
-            var dto = new CaptureRequestDTO("INVALID", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+            CaptureRequestDTO dto = new CaptureRequestDTO("INVALID", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
             Set<ConstraintViolation<CaptureRequestDTO>> violations = validator.validate(dto);
             assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("licensePlate"));
         }
@@ -109,7 +109,7 @@ class CaptureRequestDTOTest {
         @Test
         @DisplayName("should fail validation for blank license plate")
         void blankPlate() {
-            var dto = new CaptureRequestDTO("", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+            CaptureRequestDTO dto = new CaptureRequestDTO("", 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
             Set<ConstraintViolation<CaptureRequestDTO>> violations = validator.validate(dto);
             assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("licensePlate"));
         }
@@ -117,7 +117,7 @@ class CaptureRequestDTOTest {
         @Test
         @DisplayName("should fail validation for null license plate")
         void nullPlate() {
-            var dto = new CaptureRequestDTO(null, 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
+            CaptureRequestDTO dto = new CaptureRequestDTO(null, 50, 60, "RAD-001", OffsetDateTime.parse("2026-06-08T14:30:00Z"));
             Set<ConstraintViolation<CaptureRequestDTO>> violations = validator.validate(dto);
             assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("licensePlate"));
         }
