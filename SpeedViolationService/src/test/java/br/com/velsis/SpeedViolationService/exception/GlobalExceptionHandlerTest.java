@@ -2,7 +2,6 @@ package br.com.velsis.SpeedViolationService.exception;
 
 import br.com.velsis.SpeedViolationService.adapter.inbound.web.ViolationEvaluateController;
 import br.com.velsis.SpeedViolationService.domain.port.inbound.ViolationEvaluationUseCase;
-import br.com.velsis.SpeedViolationService.dto.ErrorResponse;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

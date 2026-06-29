@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ViolationStoreTest {
 
@@ -88,7 +89,7 @@ class ViolationStoreTest {
             repository.save(aViolation("ABC1D23"));
             List<Violation> result = repository.findByLicensePlate("ABC1D23");
 
-            org.junit.jupiter.api.Assertions.assertThrows(
+            assertThrows(
                     UnsupportedOperationException.class,
                     () -> result.add(aViolation("ABC1D23"))
             );
