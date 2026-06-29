@@ -14,6 +14,9 @@ test:
 
 ci: checkstyle test
 
+act:
+	act -j build
+
 coverage:
 	cd ./SpeedViolationService && $(MAVEN) clean test jacoco:report
 
