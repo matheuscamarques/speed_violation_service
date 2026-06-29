@@ -104,16 +104,16 @@ class ViolationServiceTest {
         }
 
         @Test
-        @DisplayName("should classify VERY_SERIOUS when excess exceeds 50%")
+        @DisplayName("should classify GRAVE when excess exceeds 50%")
         void verySeriousViolation() {
             var request = new CaptureRequestDTO("ABC1D23", 120, 60, "RAD-001", "2026-06-08T14:30:00Z");
 
             var response = service.evaluate(request);
 
             assertThat(response.hasViolation()).isTrue();
-            assertThat(response.consideredSpeed()).isEqualTo(112.0);
-            assertThat(response.excessPercentage()).isEqualTo(86.67);
-            assertThat(response.violation().severity()).isEqualTo("VERY_SERIOUS");
+            assertThat(response.consideredSpeed()).isEqualTo(113.0);
+            assertThat(response.excessPercentage()).isEqualTo(88.33);
+            assertThat(response.violation().severity()).isEqualTo("GRAVE");
             assertThat(response.violation().ctbCode()).isEqualTo("218-III");
         }
 
@@ -182,7 +182,7 @@ class ViolationServiceTest {
                 "61, 60, 54, false",
                 "67, 60, 60, false",
                 "68, 60, 61, true",
-                "200, 60, 186, true"
+                "200, 60, 193, true"
         })
         @DisplayName("should correctly determine violation at speed boundaries")
         void violationBoundaries(double measured, double limit, double expectedConsidered, boolean expectedViolation) {
@@ -225,7 +225,7 @@ class ViolationServiceTest {
         @CsvSource({
                 "78, 60, 71, 18.33, MEDIUM, 218-I",
                 "92, 60, 85, 41.67, SERIOUS, 218-II",
-                "120, 60, 112, 86.67, VERY_SERIOUS, 218-III"
+                "120, 60, 113, 88.33, GRAVE, 218-III"
         })
         @DisplayName("should classify severity correctly across all CTB levels")
         void allSeverities(double measured, double limit, double expectedConsidered,

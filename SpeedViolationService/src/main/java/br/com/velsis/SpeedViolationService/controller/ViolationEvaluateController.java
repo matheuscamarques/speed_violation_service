@@ -15,6 +15,7 @@ import java.util.Set;
 public class ViolationEvaluateController {
 
     private static final Set<String> VALID_ORIGINS = Set.of("FIXED", "MOBILE", "HANDHELD");
+    private static final String HEADER_X_ORIGIN = "x-origin";
 
     private final ViolationService violationService;
 
@@ -24,7 +25,7 @@ public class ViolationEvaluateController {
 
     @PostMapping("/evaluate")
     public ResponseEntity<ViolationResponse> evaluate(
-            @RequestHeader("x-origin") String origin,
+            @RequestHeader(HEADER_X_ORIGIN) String origin,
             @Valid @RequestBody CaptureRequestDTO request) {
 
         if (!VALID_ORIGINS.contains(origin)) {

@@ -2,6 +2,8 @@ package br.com.velsis.SpeedViolationService.service;
 
 import br.com.velsis.SpeedViolationService.dto.CaptureRequestDTO;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
+import br.com.velsis.SpeedViolationService.dto.ViolationResponse.ViolationDetails;
+import br.com.velsis.SpeedViolationService.model.ViolationSeverity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,44 +14,39 @@ import java.time.OffsetDateTime;
 public class ViolationService {
 
     private static final double TOLERANCE = 7.0;
+    private static final double EXCESS_LIMIT_MEDIUM = 20.0;
+    private static final double EXCESS_LIMIT_SERIOUS = 50.0;
 
     public ViolationResponse evaluate(CaptureRequestDTO request) {
-        double measuredSpeed = request.measuredSpeed();
-        double consideredSpeed = Math.max(0, measuredSpeed - TOLERANCE);
-        double speedLimit = request.speedLimit();
-        boolean hasViolation = consideredSpeed > speedLimit;
-
-        double excessPercentage = 0;
-        ViolationResponse.ViolationDetails violation = null;
-
-        if (hasViolation) {
-            excessPercentage = BigDecimal.valueOf((consideredSpeed - speedLimit) / speedLimit * 100)
-                    .setScale(2, RoundingMode.HALF_UP)
-                    .doubleValue();
-
-            violation = classifyViolation(excessPercentage);
-        }
+        var consideredSpeed = Math.max(0, request.measuredSpeed() - TOLERANCE);
+        var speedLimit = request.speedLimit();
+        var hasViolation = consideredSpeed > speedLimit;
+        var excess = hasViolation ? excessPercentage(consideredSpeed, speedLimit) : 0;
+        var details = hasViolation ? classifyViolation(excess) : null;
 
         return new ViolationResponse(
                 request.licensePlate(),
                 request.equipmentId(),
-                measuredSpeed,
+                request.measuredSpeed(),
                 consideredSpeed,
                 speedLimit,
-                excessPercentage,
+                excess,
                 hasViolation,
-                violation,
+                details,
                 OffsetDateTime.now()
         );
     }
 
-    private ViolationResponse.ViolationDetails classifyViolation(double excessPercentage) {
-        if (excessPercentage <= 20) {
-            return new ViolationResponse.ViolationDetails("MEDIUM", "218-I");
-        } else if (excessPercentage <= 50) {
-            return new ViolationResponse.ViolationDetails("SERIOUS", "218-II");
-        } else {
-            return new ViolationResponse.ViolationDetails("GRAVE", "218-III");
-        }
+    private static double excessPercentage(double speed, double limit) {
+        return BigDecimal.valueOf((speed - limit) / limit * 100)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    private static ViolationDetails classifyViolation(double excess) {
+        var severity = excess <= EXCESS_LIMIT_MEDIUM ? ViolationSeverity.MEDIUM
+                     : excess <= EXCESS_LIMIT_SERIOUS ? ViolationSeverity.SERIOUS
+                     : ViolationSeverity.GRAVE;
+        return new ViolationDetails(severity.name(), severity.ctbCode());
     }
 }
