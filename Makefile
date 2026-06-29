@@ -18,7 +18,7 @@ coverage:
 	cd ./SpeedViolationService && $(MAVEN) clean test jacoco:report
 
 verify:
-	cd ./SpeedViolationService && $(MAVEN) verify -Dspring-cloud-contract.skip=true -Dcontract.verifier.skip=true
+	cd ./SpeedViolationService && $(MAVEN) verify
 
 docker-build:
 	docker build -t speed-violation-service .

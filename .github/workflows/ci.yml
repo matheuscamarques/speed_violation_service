@@ -34,4 +34,4 @@ jobs:
         run: ./mvnw -B test
 
       - name: Coverage check (JaCoCo)
-        run: ./mvnw -B verify -Dspring-cloud-contract.skip=true -Dcontract.verifier.skip=true
+        run: ./mvnw -B verify
