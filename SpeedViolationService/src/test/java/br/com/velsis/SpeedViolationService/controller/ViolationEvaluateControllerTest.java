@@ -1,7 +1,8 @@
 package br.com.velsis.SpeedViolationService.controller;
 
+import br.com.velsis.SpeedViolationService.adapter.inbound.web.ViolationEvaluateController;
+import br.com.velsis.SpeedViolationService.domain.port.inbound.ViolationEvaluationUseCase;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
-import br.com.velsis.SpeedViolationService.service.ViolationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ViolationEvaluateControllerTest {
 
     private MockMvc mockMvc;
-    private ViolationService violationService;
+    private ViolationEvaluationUseCase violationEvaluationUseCase;
 
     private final String validBody = """
             {"licensePlate":"ABC1D23","measuredSpeed":92,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
@@ -35,8 +36,8 @@ class ViolationEvaluateControllerTest {
 
     @BeforeEach
     void setUp() {
-        violationService = mock(ViolationService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new ViolationEvaluateController(violationService)).build();
+        violationEvaluationUseCase = mock(ViolationEvaluationUseCase.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new ViolationEvaluateController(violationEvaluationUseCase)).build();
     }
 
     @Test
@@ -44,7 +45,7 @@ class ViolationEvaluateControllerTest {
     void validRequestFixed() throws Exception {
         ViolationResponse response = new ViolationResponse("ABC1D23", "RAD-CWB-001", 92, 85, 60, 41.67, true,
                 new ViolationResponse.ViolationDetails("SERIOUS", "218-II"), OffsetDateTime.now());
-        when(violationService.evaluate(any())).thenReturn(response);
+        when(violationEvaluationUseCase.evaluate(any())).thenReturn(response);
 
         performPost("FIXED", validBody)
                 .andExpect(status().isOk())
@@ -58,7 +59,7 @@ class ViolationEvaluateControllerTest {
     void validRequestOtherOrigins(String origin) throws Exception {
         ViolationResponse response = new ViolationResponse("ABC1D23", "RAD-CWB-001", 92, 85, 60, 41.67, true,
                 new ViolationResponse.ViolationDetails("SERIOUS", "218-II"), OffsetDateTime.now());
-        when(violationService.evaluate(any())).thenReturn(response);
+        when(violationEvaluationUseCase.evaluate(any())).thenReturn(response);
 
         performPost(origin, validBody).andExpect(status().isOk());
     }
@@ -239,7 +240,7 @@ class ViolationEvaluateControllerTest {
     @DisplayName("RF6.3: should return 200 with valid old format license plate (ABC1234)")
     void validLicensePlateOldFormat() throws Exception {
         ViolationResponse response = new ViolationResponse("ABC1234", "RAD-CWB-001", 50, 43, 60, 0, false, null, OffsetDateTime.now());
-        when(violationService.evaluate(any())).thenReturn(response);
+        when(violationEvaluationUseCase.evaluate(any())).thenReturn(response);
 
         String body = """
                 {"licensePlate":"ABC1234","measuredSpeed":50,"speedLimit":60,"equipmentId":"RAD-CWB-001","captureTimestamp":"2026-06-08T14:30:00Z"}
@@ -254,7 +255,7 @@ class ViolationEvaluateControllerTest {
         @Test
         @DisplayName("should return 200 with empty list when no violations")
         void noViolations() throws Exception {
-            when(violationService.findByLicensePlate("ABC1D23")).thenReturn(List.of());
+            when(violationEvaluationUseCase.findByLicensePlate("ABC1D23")).thenReturn(List.of());
 
             mockMvc.perform(get("/api/v1/violations")
                             .param("licensePlate", "ABC1D23"))
@@ -267,7 +268,7 @@ class ViolationEvaluateControllerTest {
         void withViolations() throws Exception {
             ViolationResponse violation = new ViolationResponse("ABC1D23", "RAD-001", 100, 93, 80, 16.25, true,
                     new ViolationResponse.ViolationDetails("MEDIUM", "218-I"), OffsetDateTime.now());
-            when(violationService.findByLicensePlate("ABC1D23")).thenReturn(List.of(violation));
+            when(violationEvaluationUseCase.findByLicensePlate("ABC1D23")).thenReturn(List.of(violation));
 
             mockMvc.perform(get("/api/v1/violations")
                             .param("licensePlate", "ABC1D23"))
@@ -279,7 +280,7 @@ class ViolationEvaluateControllerTest {
         @Test
         @DisplayName("should return 200 with empty list when plate has no violations")
         void plateWithoutViolations() throws Exception {
-            when(violationService.findByLicensePlate("ZZZ0000")).thenReturn(List.of());
+            when(violationEvaluationUseCase.findByLicensePlate("ZZZ0000")).thenReturn(List.of());
 
             mockMvc.perform(get("/api/v1/violations")
                             .param("licensePlate", "ZZZ0000"))

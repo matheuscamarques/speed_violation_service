@@ -1,8 +1,9 @@
 package br.com.velsis.SpeedViolationService.exception;
 
+import br.com.velsis.SpeedViolationService.adapter.inbound.web.ViolationEvaluateController;
+import br.com.velsis.SpeedViolationService.domain.port.inbound.ViolationEvaluationUseCase;
 import br.com.velsis.SpeedViolationService.dto.ErrorResponse;
 import br.com.velsis.SpeedViolationService.dto.ViolationResponse;
-import br.com.velsis.SpeedViolationService.service.ViolationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,13 +23,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class GlobalExceptionHandlerTest {
 
     private MockMvc mockMvc;
-    private ViolationService violationService;
+    private ViolationEvaluationUseCase violationEvaluationUseCase;
 
     @BeforeEach
     void setUp() {
-        violationService = mock(ViolationService.class);
+        violationEvaluationUseCase = mock(ViolationEvaluationUseCase.class);
         mockMvc = MockMvcBuilders.standaloneSetup(
-                        new br.com.velsis.SpeedViolationService.controller.ViolationEvaluateController(violationService))
+                        new ViolationEvaluateController(violationEvaluationUseCase))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -100,7 +101,7 @@ class GlobalExceptionHandlerTest {
         @Test
         @DisplayName("should return 500 with ErrorResponse and no stack trace")
         void internalError() throws Exception {
-            when(violationService.evaluate(any())).thenThrow(new RuntimeException("connection refused"));
+            when(violationEvaluationUseCase.evaluate(any())).thenThrow(new RuntimeException("connection refused"));
 
             String body = """
                     {"licensePlate":"ABC1D23","measuredSpeed":92,"speedLimit":60,"equipmentId":"RAD-001","captureTimestamp":"2026-06-08T14:30:00Z"}
@@ -127,7 +128,7 @@ class GlobalExceptionHandlerTest {
         void validPost() throws Exception {
             ViolationResponse response = new ViolationResponse("ABC1D23", "RAD-001", 92, 85, 60, 41.67, true,
                     new ViolationResponse.ViolationDetails("SERIOUS", "218-II"), java.time.OffsetDateTime.now());
-            when(violationService.evaluate(any())).thenReturn(response);
+            when(violationEvaluationUseCase.evaluate(any())).thenReturn(response);
 
             String body = """
                     {"licensePlate":"ABC1D23","measuredSpeed":92,"speedLimit":60,"equipmentId":"RAD-001","captureTimestamp":"2026-06-08T14:30:00Z"}

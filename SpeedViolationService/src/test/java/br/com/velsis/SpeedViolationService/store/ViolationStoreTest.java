@@ -1,7 +1,8 @@
 package br.com.velsis.SpeedViolationService.store;
 
-import br.com.velsis.SpeedViolationService.model.Violation;
-import br.com.velsis.SpeedViolationService.model.ViolationSeverity;
+import br.com.velsis.SpeedViolationService.adapter.outbound.persistence.InMemoryViolationRepository;
+import br.com.velsis.SpeedViolationService.domain.model.Violation;
+import br.com.velsis.SpeedViolationService.domain.model.ViolationSeverity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,11 +16,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ViolationStoreTest {
 
-    private ViolationStore store;
+    private InMemoryViolationRepository repository;
 
     @BeforeEach
     void setUp() {
-        store = new ViolationStore();
+        repository = new InMemoryViolationRepository();
     }
 
     @Nested
@@ -29,7 +30,7 @@ class ViolationStoreTest {
         @Test
         @DisplayName("should return empty list when no violations saved")
         void noViolations() {
-            List<Violation> result = store.findByLicensePlate("ABC1D23");
+            List<Violation> result = repository.findByLicensePlate("ABC1D23");
 
             assertThat(result).isEmpty();
         }
@@ -39,8 +40,8 @@ class ViolationStoreTest {
         void singleViolation() {
             Violation violation = aViolation("ABC1D23");
 
-            store.save(violation);
-            List<Violation> result = store.findByLicensePlate("ABC1D23");
+            repository.save(violation);
+            List<Violation> result = repository.findByLicensePlate("ABC1D23");
 
             assertThat(result).containsExactly(violation);
         }
@@ -51,9 +52,9 @@ class ViolationStoreTest {
             Violation v1 = aViolation("ABC1D23");
             Violation v2 = aViolation("ABC1D23");
 
-            store.save(v1);
-            store.save(v2);
-            List<Violation> result = store.findByLicensePlate("ABC1D23");
+            repository.save(v1);
+            repository.save(v2);
+            List<Violation> result = repository.findByLicensePlate("ABC1D23");
 
             assertThat(result).containsExactly(v1, v2);
         }
@@ -61,10 +62,10 @@ class ViolationStoreTest {
         @Test
         @DisplayName("should not return violations for other plates")
         void differentPlates() {
-            store.save(aViolation("ABC1D23"));
-            store.save(aViolation("XYZ9A88"));
+            repository.save(aViolation("ABC1D23"));
+            repository.save(aViolation("XYZ9A88"));
 
-            List<Violation> result = store.findByLicensePlate("OTHER");
+            List<Violation> result = repository.findByLicensePlate("OTHER");
 
             assertThat(result).isEmpty();
         }
@@ -72,10 +73,10 @@ class ViolationStoreTest {
         @Test
         @DisplayName("should return violations only for the requested plate")
         void returnsOnlyRequestedPlate() {
-            store.save(aViolation("ABC1D23"));
-            store.save(aViolation("XYZ9A88"));
+            repository.save(aViolation("ABC1D23"));
+            repository.save(aViolation("XYZ9A88"));
 
-            List<Violation> result = store.findByLicensePlate("ABC1D23");
+            List<Violation> result = repository.findByLicensePlate("ABC1D23");
 
             assertThat(result).hasSize(1);
             assertThat(result.getFirst().licensePlate()).isEqualTo("ABC1D23");
@@ -84,8 +85,8 @@ class ViolationStoreTest {
         @Test
         @DisplayName("should return immutable list")
         void returnsImmutableList() {
-            store.save(aViolation("ABC1D23"));
-            List<Violation> result = store.findByLicensePlate("ABC1D23");
+            repository.save(aViolation("ABC1D23"));
+            List<Violation> result = repository.findByLicensePlate("ABC1D23");
 
             org.junit.jupiter.api.Assertions.assertThrows(
                     UnsupportedOperationException.class,
