@@ -4,6 +4,7 @@ WORKDIR /app
 COPY ./SpeedViolationService/pom.xml .
 RUN mvn dependency:resolve -B && mvn dependency:resolve -DincludeScope=test -B
 COPY ./SpeedViolationService/src ./src
+COPY ./SpeedViolationService/checkstyle.xml .
 RUN mvn clean package -DskipTests -B
 
 # Stage 2: Run
