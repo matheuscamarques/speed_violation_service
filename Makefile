@@ -15,3 +15,6 @@ docker-build:
 
 docker-run:
 	docker run -p 8080:8080 speed-violation-service
+
+docker-test:
+	docker build --target builder -t speed-violation-service-builder . && docker run --rm speed-violation-service-builder mvn test jacoco:report -B
