@@ -1,0 +1,30 @@
+request:
+  method: POST
+  url: /api/v1/violations/evaluate
+  headers:
+    x-origin: FIXED
+  body:
+    licensePlate: "ABC1D23"
+    measuredSpeed: 92
+    speedLimit: 60
+    equipmentId: "RAD-CWB-001"
+    captureTimestamp: "2026-06-08T14:30:00Z"
+  matchers:
+    body:
+      - path: $.licensePlate
+        type: by_regex
+        value: "[A-Z]{3}[0-9][A-Z][0-9]{2}|[A-Z]{3}[0-9]{4}"
+response:
+  status: 200
+  body:
+    licensePlate: "ABC1D23"
+    equipmentId: "RAD-CWB-001"
+    measuredSpeed: 92
+    consideredSpeed: 85
+    speedLimit: 60
+    excessPercentage: 41.67
+    hasViolation: true
+    violation:
+      severity: "SERIOUS"
+      ctbCode: "218-II"
+    processedAt: "2026-06-08T14:30:05Z"
