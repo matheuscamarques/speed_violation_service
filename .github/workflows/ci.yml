@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: SpeedViolationService
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,11 +24,14 @@ jobs:
           distribution: temurin
           cache: maven
 
+      - name: Make wrapper executable
+        run: chmod +x mvnw
+
       - name: Checkstyle (validate conventions)
-        run: mvn -B validate -f SpeedViolationService/pom.xml
+        run: ./mvnw -B validate
 
       - name: Unit and integration tests
-        run: mvn -B test -f SpeedViolationService/pom.xml
+        run: ./mvnw -B test
 
       - name: Coverage check (JaCoCo)
-        run: mvn -B verify -f SpeedViolationService/pom.xml -Dspring-cloud-contract.skip=true -Dcontract.verifier.skip=true
+        run: ./mvnw -B verify -Dspring-cloud-contract.skip=true -Dcontract.verifier.skip=true
