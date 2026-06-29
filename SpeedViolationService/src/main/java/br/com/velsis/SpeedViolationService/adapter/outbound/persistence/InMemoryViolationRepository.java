@@ -2,6 +2,7 @@ package br.com.velsis.SpeedViolationService.adapter.outbound.persistence;
 
 import br.com.velsis.SpeedViolationService.domain.model.Violation;
 import br.com.velsis.SpeedViolationService.domain.port.outbound.ViolationRepository;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@Profile("!h2")
 public class InMemoryViolationRepository implements ViolationRepository {
 
     private final ConcurrentHashMap<String, List<Violation>> violations = new ConcurrentHashMap<>();
