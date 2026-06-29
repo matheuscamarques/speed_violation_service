@@ -1,4 +1,4 @@
-MAVEN = ./SpeedViolationService/mvnw
+MAVEN = ./mvnw
 
 run:
 	cd ./SpeedViolationService && $(MAVEN) spring-boot:run
